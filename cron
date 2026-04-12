@@ -1,0 +1,6 @@
+# FyersGap cron schedule (IST = UTC+5:30)
+# Start the strategy at 8:55 AM IST (03:25 UTC)
+25 3 * * 1-5  cd /path/to/FyersGap && ./run_gap.sh
+
+# Graceful stop at 3:30 PM IST (10:00 UTC)
+0 10 * * 1-5  cd /path/to/FyersGap && ./stop_gap.sh
