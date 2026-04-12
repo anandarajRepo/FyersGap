@@ -1,0 +1,12 @@
+.env
+.fyers_token.json
+.fyersgap_stop
+logs/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
