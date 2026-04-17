@@ -89,8 +89,8 @@ class FyersDataService:
             "symbol": fyers_symbol,
             "resolution": "D",
             "date_format": "1",                        # epoch timestamps
-            "range_from": str(int(from_date.timestamp())),
-            "range_to": str(int(to_date.timestamp())),
+            "range_from": int(from_date.timestamp()),
+            "range_to": int(to_date.timestamp()),
             "cont_flag": "1",                          # continuous data
         }
 
