@@ -89,10 +89,13 @@ class FyersDataService:
             "symbol": fyers_symbol,
             "resolution": "D",
             "date_format": "1",                        # epoch timestamps
-            "range_from": str(int(from_date.timestamp())),
-            "range_to": str(int(to_date.timestamp())),
-            "cont_flag": "1",                          # continuous data
+            "from": int(from_date.timestamp()),
+            "to": int(to_date.timestamp()),
+            "cont_flag": 1,                            # continuous data
         }
+
+        logger.debug("API params: symbol=%s, from=%d, to=%d",
+                     data["symbol"], data["from"], data["to"])
 
         try:
             def _fetch():
@@ -100,7 +103,9 @@ class FyersDataService:
                 if not isinstance(resp, dict):
                     raise ValueError(f"Unexpected response type: {type(resp)}")
                 if resp.get("s") != "ok":
-                    raise ValueError(f"Fyers history error: {resp.get('message', resp)}")
+                    error_msg = resp.get('message', resp)
+                    logger.debug("Full API response: %s", resp)
+                    raise ValueError(f"Fyers history error: {error_msg}")
                 return resp
 
             raw = _retry(_fetch)

@@ -1,129 +1,111 @@
 """
-FyersGap — Trading universe management.
+FyersGap — Simplified symbol manager for Gap strategy.
 
-Symbols are stored as plain NSE ticker strings.
-Use `get_all_symbols()` to retrieve the full watchlist and
-`to_fyers_format(symbol)` to convert to the Fyers API symbol string.
-
-Fyers symbol format for NSE cash equities: "NSE:<TICKER>-EQ"
-Example: "NSE:RELIANCE-EQ"
+Manages symbol mappings for gap detection and trading strategy.
+Fyers WebSocket format: "NSE:<TICKER>-EQ"
 """
 
 from __future__ import annotations
+from typing import Dict
 
-# ---------------------------------------------------------------------------
-# Watchlist — ~150 liquid NSE stocks grouped by sector
-# ---------------------------------------------------------------------------
 
-_WATCHLIST: dict[str, list[str]] = {
-    "Energy": [
-        "RELIANCE", "ONGC", "IOC", "BPCL", "HPCL",
-        "GAIL", "PETRONET", "IGL", "MGL", "GSPL",
-    ],
-    "Renewables": [
-        "ADANIGREEN", "TATAPOWER", "CESC", "TORNTPOWER", "NTPC",
-        "POWERGRID", "SJVN", "NHPC", "INOXGREEN",
-    ],
-    "Defense": [
-        "HAL", "BEL", "BEML", "BHEL", "MIDHANI",
-        "PARAS", "MTAR", "COCHINSHIP", "GARDENREACH",
-    ],
-    "Pharma": [
-        "SUNPHARMA", "DRREDDY", "CIPLA", "DIVISLAB", "AUROPHARMA",
-        "LUPIN", "BIOCON", "IPCALAB", "ALKEM", "GLENMARK",
-    ],
-    "IT": [
-        "TCS", "INFY", "WIPRO", "HCLTECH", "TECHM",
-        "LTIM", "MPHASIS", "PERSISTENT", "COFORGE", "KPIT",
-    ],
-    "Auto": [
-        "MARUTI", "TATAMOTORS", "M&M", "BAJAJ-AUTO", "EICHERMOT",
-        "HEROMOTOCO", "TVSMOTORS", "ASHOKLEY", "TVSMOTOR", "MOTHERSON",
-    ],
-    "Banking": [
-        "HDFCBANK", "ICICIBANK", "KOTAKBANK", "AXISBANK", "SBIN",
-        "BANKBARODA", "PNB", "CANBK", "FEDERALBNK", "IDFCFIRSTB",
-    ],
-    "NBFC": [
-        "BAJFINANCE", "BAJAJFINSV", "CHOLAFIN", "MUTHOOTFIN",
-        "MANAPPURAM", "M&MFIN", "LICHOUSFIN", "HDFCAMC",
-    ],
-    "FMCG": [
-        "HINDUNILVR", "ITC", "NESTLEIND", "BRITANNIA", "DABUR",
-        "MARICO", "GODREJCP", "EMAMILTD", "COLPAL",
-    ],
-    "Metals": [
-        "TATASTEEL", "JSWSTEEL", "HINDALCO", "VEDL", "COALINDIA",
-        "NMDC", "MOIL", "NATIONALUM", "SAIL",
-    ],
-    "Cement": [
-        "ULTRACEMCO", "AMBUJACEM", "ACC", "SHREECEM", "RAMCOCEM",
-        "JKCEMENT", "HEIDELBERG",
-    ],
-    "Paints": [
-        "ASIANPAINT", "BERGEPAINT", "KANSAINER", "INDIGO",
-    ],
-    "Chemicals": [
-        "PIDILITIND", "AARTIIND", "DEEPAKNTR", "GNFC", "TATACHEMICALS",
-        "ALKYLAMINE", "NAVINFLUOR",
-    ],
-    "Infrastructure": [
-        "LT", "ADANIPORTS", "ADANIENTER", "IRB", "KNR",
-        "NBCC", "RVNL", "IRFC",
-    ],
-    "Telecom": [
-        "BHARTIARTL", "IDEA",
-    ],
-    "Consumer_Durables": [
-        "HAVELLS", "VOLTAS", "BLUESTAR", "POLYCAB", "KEI",
-        "VGUARD", "CROMPTON",
-    ],
-}
+class GapSymbolManager:
+    """Simplified symbol manager for Gap strategy — just symbol mappings"""
 
-# ---------------------------------------------------------------------------
-# Public helpers
-# ---------------------------------------------------------------------------
+    def __init__(self):
+        # Simple mapping: symbol -> Fyers WebSocket format
+        self._symbol_mappings: Dict[str, str] = {
+            # Upstream Energy — Clear Winners
+            "ONGC": "NSE:ONGC-EQ",
+            "OIL": "NSE:OIL-EQ",
+            "GAIL": "NSE:GAIL-EQ",
+
+            # Jewellery Retail
+            "TITAN": "NSE:TITAN-EQ",
+            "KALYANKJIL": "NSE:KALYANKJIL-EQ",
+            "PCJEWELLER": "NSE:PCJEWELLER-EQ",
+            "PNGBL": "NSE:PNGBL-EQ",
+            "THANGAMAYL": "NSE:THANGAMAYL-EQ",
+
+            # Gold-loan NBFCs
+            "MUTHOOTFIN": "NSE:MUTHOOTFIN-EQ",      # Muthoot Finance – large gold‑loan NBFC
+            "MANAPPURAM": "NSE:MANAPPURAM-EQ",      # Manappuram Finance – big gold‑loan NBFC
+
+            # Favourite Stocks
+            "STLTECH": "NSE:STLTECH-EQ",
+            "SKYGOLD": "NSE:SKYGOLD-EQ",
+            "AXISCADES": "NSE:AXISCADES-EQ",
+        }
+
+    def get_all_symbols(self) -> list[str]:
+        """Return list of all plain ticker symbols."""
+        return list(self._symbol_mappings.keys())
+
+    def get_fyers_symbol(self, ticker: str) -> str:
+        """
+        Get Fyers WebSocket format for a symbol.
+
+        Args:
+            ticker: Plain NSE ticker (e.g., "ONGC")
+
+        Returns:
+            Fyers format string (e.g., "NSE:ONGC-EQ")
+        """
+        ticker = ticker.strip().upper()
+        return self._symbol_mappings.get(ticker, f"NSE:{ticker}-EQ")
+
+    def get_all_fyers_symbols(self) -> list[str]:
+        """Return list of all Fyers WebSocket format symbols."""
+        return list(self._symbol_mappings.values())
+
+    def is_valid_symbol(self, ticker: str) -> bool:
+        """Check if a ticker is in the managed symbols list."""
+        return ticker.strip().upper() in self._symbol_mappings
+
+    def normalize(self, symbol: str) -> str:
+        """Uppercase and strip whitespace."""
+        return symbol.strip().upper()
+
+
+# Module-level convenience instance and functions
+_manager = GapSymbolManager()
+
 
 def get_all_symbols() -> list[str]:
-    """Return flat list of all symbols in the watchlist."""
-    symbols = []
-    for sector_symbols in _WATCHLIST.values():
-        symbols.extend(sector_symbols)
-    return list(dict.fromkeys(symbols))  # deduplicate, preserve order
+    """Return list of all plain ticker symbols."""
+    return _manager.get_all_symbols()
 
 
-def get_symbols_by_sector(sector: str) -> list[str]:
-    return _WATCHLIST.get(sector, [])
+def get_fyers_symbol(ticker: str) -> str:
+    """Get Fyers WebSocket format for a symbol."""
+    return _manager.get_fyers_symbol(ticker)
 
 
-def get_sectors() -> list[str]:
-    return list(_WATCHLIST.keys())
+def get_all_fyers_symbols() -> list[str]:
+    """Return list of all Fyers WebSocket format symbols."""
+    return _manager.get_all_fyers_symbols()
 
 
-def to_fyers_format(symbol: str) -> str:
-    """
-    Convert a plain NSE ticker to the Fyers API symbol string.
-
-    Fyers uses "NSE:<TICKER>-EQ" for NSE cash equity instruments.
-    Example: "RELIANCE" → "NSE:RELIANCE-EQ"
-    """
-    return f"NSE:{symbol.strip().upper()}-EQ"
+def is_valid_symbol(ticker: str) -> bool:
+    """Check if a ticker is in the managed symbols list."""
+    return _manager.is_valid_symbol(ticker)
 
 
-def from_fyers_format(fyers_symbol: str) -> str:
-    """
-    Extract the plain NSE ticker from a Fyers symbol string.
-    Example: "NSE:RELIANCE-EQ" → "RELIANCE"
-    """
-    # Strip "NSE:" prefix and "-EQ" suffix
-    ticker = fyers_symbol.upper()
-    if ticker.startswith("NSE:"):
-        ticker = ticker[4:]
-    if ticker.endswith("-EQ"):
-        ticker = ticker[:-3]
-    return ticker
+def to_fyers_format(ticker: str) -> str:
+    """Alias for get_fyers_symbol - convert plain ticker to Fyers format."""
+    return _manager.get_fyers_symbol(ticker)
 
 
-def normalize(symbol: str) -> str:
-    """Uppercase and strip whitespace."""
-    return symbol.strip().upper()
+def from_fyers_format(fyers_symbol: str) -> str | None:
+    """Extract plain ticker from Fyers format (e.g., 'NSE:ONGC-EQ' → 'ONGC')."""
+    if not fyers_symbol:
+        return None
+    try:
+        # Expected format: "NSE:TICKER-EQ"
+        parts = fyers_symbol.split(":")
+        if len(parts) != 2:
+            return None
+        ticker_part = parts[1].split("-")
+        return ticker_part[0] if ticker_part else None
+    except (IndexError, AttributeError):
+        return None
