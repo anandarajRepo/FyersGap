@@ -65,3 +65,47 @@ class GapSymbolManager:
     def normalize(self, symbol: str) -> str:
         """Uppercase and strip whitespace."""
         return symbol.strip().upper()
+
+
+# Module-level convenience instance and functions
+_manager = GapSymbolManager()
+
+
+def get_all_symbols() -> list[str]:
+    """Return list of all plain ticker symbols."""
+    return _manager.get_all_symbols()
+
+
+def get_fyers_symbol(ticker: str) -> str:
+    """Get Fyers WebSocket format for a symbol."""
+    return _manager.get_fyers_symbol(ticker)
+
+
+def get_all_fyers_symbols() -> list[str]:
+    """Return list of all Fyers WebSocket format symbols."""
+    return _manager.get_all_fyers_symbols()
+
+
+def is_valid_symbol(ticker: str) -> bool:
+    """Check if a ticker is in the managed symbols list."""
+    return _manager.is_valid_symbol(ticker)
+
+
+def to_fyers_format(ticker: str) -> str:
+    """Alias for get_fyers_symbol - convert plain ticker to Fyers format."""
+    return _manager.get_fyers_symbol(ticker)
+
+
+def from_fyers_format(fyers_symbol: str) -> str | None:
+    """Extract plain ticker from Fyers format (e.g., 'NSE:ONGC-EQ' → 'ONGC')."""
+    if not fyers_symbol:
+        return None
+    try:
+        # Expected format: "NSE:TICKER-EQ"
+        parts = fyers_symbol.split(":")
+        if len(parts) != 2:
+            return None
+        ticker_part = parts[1].split("-")
+        return ticker_part[0] if ticker_part else None
+    except (IndexError, AttributeError):
+        return None
