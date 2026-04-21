@@ -14,8 +14,10 @@ Credentials required (via .env):
 
 Token caching
 -------------
-The access_token is persisted to .fyers_token.json and reused for up to
-23 hours (Fyers tokens are valid until 6:00 AM IST the following day).
+The access_token is persisted back to the project `.env` file under
+FYERS_ACCESS_TOKEN (with FYERS_ACCESS_TOKEN_SAVED_AT tracking the issue time)
+and reused for up to 23 hours — Fyers tokens are valid until 6:00 AM IST the
+following day.
 
 Usage
 -----
@@ -25,7 +27,6 @@ Usage
 
 from __future__ import annotations
 
-import json
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -36,39 +37,85 @@ from utils.logger import get_logger
 
 logger = get_logger("auth_helper", settings.ops.log_level, settings.ops.log_file)
 
-_TOKEN_FILE = Path(".fyers_token.json")
+_ENV_FILE = Path(".env")
+_TOKEN_KEY = "FYERS_ACCESS_TOKEN"
+_TOKEN_SAVED_AT_KEY = "FYERS_ACCESS_TOKEN_SAVED_AT"
 _TOKEN_EXPIRY_HOURS = 23  # Conservative: Fyers tokens valid until 6 AM IST next day
 
 
 # ---------------------------------------------------------------------------
-# Token cache helpers
+# .env read/write helpers
 # ---------------------------------------------------------------------------
 
+def _upsert_env_var(path: Path, key: str, value: str) -> None:
+    """
+    Set `key=value` inside the given .env file.
+
+    If the key already exists (commented or not), its line is replaced in-place
+    so the surrounding order/comments are preserved. Otherwise the key is
+    appended at the end of the file. The file is created if missing.
+    """
+    lines: list[str] = []
+    if path.exists():
+        lines = path.read_text().splitlines()
+
+    new_line = f"{key}={value}"
+    replaced = False
+    for i, line in enumerate(lines):
+        stripped = line.lstrip()
+        # Match both "KEY=..." and "# KEY=..." so a commented placeholder gets filled.
+        candidate = stripped.lstrip("#").lstrip()
+        if candidate.startswith(f"{key}="):
+            lines[i] = new_line
+            replaced = True
+            break
+
+    if not replaced:
+        lines.append(new_line)
+
+    path.write_text("\n".join(lines) + "\n")
+
+
 def _load_cached_token() -> Optional[str]:
-    """Return a cached access_token string if still valid, else None."""
-    if not _TOKEN_FILE.exists():
+    """Return a cached access_token from the environment if still valid, else None."""
+    token = os.getenv(_TOKEN_KEY, "").strip()
+    saved_at_raw = os.getenv(_TOKEN_SAVED_AT_KEY, "").strip()
+    if not token:
+        return None
+    if not saved_at_raw:
+        logger.info("Cached Fyers token has no saved_at timestamp — re-authenticating")
         return None
     try:
-        data = json.loads(_TOKEN_FILE.read_text())
-        saved_at = datetime.fromisoformat(data["saved_at"])
-        if datetime.now() - saved_at < timedelta(hours=_TOKEN_EXPIRY_HOURS):
-            logger.info("Using cached Fyers token (saved %s)", saved_at.strftime("%H:%M"))
-            return data["access_token"]
-        logger.info("Cached Fyers token expired — re-authenticating")
-    except Exception as exc:
-        logger.warning("Failed to read cached token: %s", exc)
+        saved_at = datetime.fromisoformat(saved_at_raw)
+    except ValueError as exc:
+        logger.warning("Invalid %s (%s): %s", _TOKEN_SAVED_AT_KEY, saved_at_raw, exc)
+        return None
+
+    if datetime.now() - saved_at < timedelta(hours=_TOKEN_EXPIRY_HOURS):
+        logger.info("Using cached Fyers token (saved %s)", saved_at.strftime("%H:%M"))
+        return token
+
+    logger.info("Cached Fyers token expired — re-authenticating")
     return None
 
 
 def _save_token(access_token: str) -> None:
+    """Persist the access_token into the project .env file."""
+    now_iso = datetime.now().isoformat(timespec="seconds")
     try:
-        _TOKEN_FILE.write_text(json.dumps({
-            "access_token": access_token,
-            "saved_at": datetime.now().isoformat(),
-        }))
-        logger.info("Fyers access token cached to %s", _TOKEN_FILE)
+        _upsert_env_var(_ENV_FILE, _TOKEN_KEY, access_token)
+        _upsert_env_var(_ENV_FILE, _TOKEN_SAVED_AT_KEY, now_iso)
     except Exception as exc:
-        logger.warning("Could not persist token: %s", exc)
+        logger.warning("Could not persist token to %s: %s", _ENV_FILE, exc)
+        return
+
+    # Update the current process environment so subsequent reads see the new token
+    # without requiring a restart.
+    os.environ[_TOKEN_KEY] = access_token
+    os.environ[_TOKEN_SAVED_AT_KEY] = now_iso
+    settings.broker.access_token = access_token
+    settings.broker.access_token_saved_at = now_iso
+    logger.info("Fyers access token written to %s", _ENV_FILE)
 
 
 # ---------------------------------------------------------------------------
@@ -149,8 +196,9 @@ def get_fyers_client():
     """
     Return an authenticated Fyers API v3 client (FyersModel instance).
 
-    Loads a cached token if valid; otherwise runs the interactive OAuth flow
-    and caches the new token for subsequent runs.
+    Loads a cached token from the .env file if valid; otherwise runs the
+    interactive OAuth flow and writes the new token back to .env for
+    subsequent runs.
 
     Returns
     -------
