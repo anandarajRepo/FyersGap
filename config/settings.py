@@ -70,7 +70,7 @@ class GapConfig:
 
 @dataclass
 class RiskConfig:
-    portfolio_value: float = field(default_factory=lambda: _float("PORTFOLIO_VALUE", 50000))
+    portfolio_value: float = field(default_factory=lambda: _float("PORTFOLIO_VALUE", 6000))
     risk_per_trade: float = field(default_factory=lambda: _float("RISK_PER_TRADE", 0.30))
     max_positions: int = field(default_factory=lambda: _int("MAX_POSITIONS", 3))
     max_daily_loss_pct: float = field(default_factory=lambda: _float("MAX_DAILY_LOSS_PCT", 0.02))
