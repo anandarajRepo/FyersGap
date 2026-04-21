@@ -1,5 +1,4 @@
 .env
-.fyers_token.json
 .fyersgap_stop
 logs/
 __pycache__/

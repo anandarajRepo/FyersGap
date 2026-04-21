@@ -36,6 +36,10 @@ class BrokerConfig:
     secret_key: str = field(default_factory=lambda: os.getenv("FYERS_SECRET_KEY", ""))
     # Redirect URI registered in the Fyers app (must match exactly)
     redirect_uri: str = field(default_factory=lambda: os.getenv("FYERS_REDIRECT_URI", "https://127.0.0.1/"))
+    # Cached access token, persisted to .env by the auth flow.
+    access_token: str = field(default_factory=lambda: os.getenv("FYERS_ACCESS_TOKEN", ""))
+    # ISO-8601 timestamp of when the access_token was issued.
+    access_token_saved_at: str = field(default_factory=lambda: os.getenv("FYERS_ACCESS_TOKEN_SAVED_AT", ""))
 
 
 # ---------------------------------------------------------------------------
