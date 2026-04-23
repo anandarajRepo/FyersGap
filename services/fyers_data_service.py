@@ -85,11 +85,12 @@ class FyersDataService:
         fyers_symbol = to_fyers_format(symbol)
         logger.debug("Fetching %d-day OHLC for %s (%s)", days, symbol, fyers_symbol)
 
-        # Fyers API v3: date_format="0" expects "YYYY-MM-DD" strings
+        # Fyers API v3: date_format="1" expects "YYYY-MM-DD" strings
+        # (date_format="0" expects epoch seconds)
         data = {
             "symbol": fyers_symbol,
             "resolution": "D",
-            "date_format": "0",
+            "date_format": "1",
             "range_from": from_date.strftime("%Y-%m-%d"),
             "range_to": to_date.strftime("%Y-%m-%d"),
             "cont_flag": "1",
