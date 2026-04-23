@@ -24,7 +24,7 @@ class GapSymbolManager:
             "TITAN": "NSE:TITAN-EQ",
             "KALYANKJIL": "NSE:KALYANKJIL-EQ",
             "PCJEWELLER": "NSE:PCJEWELLER-EQ",
-            "PNGBL": "NSE:PNGBL-EQ",
+            "PNGJL": "NSE:PNGJL-EQ",
             "THANGAMAYL": "NSE:THANGAMAYL-EQ",
 
             # Gold-loan NBFCs
