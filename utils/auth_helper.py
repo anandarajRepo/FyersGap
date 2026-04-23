@@ -28,7 +28,7 @@ Usage
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -40,8 +40,6 @@ logger = get_logger("auth_helper", settings.ops.log_level, settings.ops.log_file
 _ENV_FILE = Path(".env")
 _TOKEN_KEY = "FYERS_ACCESS_TOKEN"
 _TOKEN_SAVED_AT_KEY = "FYERS_ACCESS_TOKEN_SAVED_AT"
-_TOKEN_EXPIRY_HOURS = 23  # Conservative: Fyers tokens valid until 6 AM IST next day
-
 
 # ---------------------------------------------------------------------------
 # .env read/write helpers
@@ -77,26 +75,12 @@ def _upsert_env_var(path: Path, key: str, value: str) -> None:
 
 
 def _load_cached_token() -> Optional[str]:
-    """Return a cached access_token from the environment if still valid, else None."""
+    """Return a cached access_token from the environment if one exists."""
     token = os.getenv(_TOKEN_KEY, "").strip()
-    saved_at_raw = os.getenv(_TOKEN_SAVED_AT_KEY, "").strip()
     if not token:
         return None
-    if not saved_at_raw:
-        logger.info("Cached Fyers token has no saved_at timestamp — re-authenticating")
-        return None
-    try:
-        saved_at = datetime.fromisoformat(saved_at_raw)
-    except ValueError as exc:
-        logger.warning("Invalid %s (%s): %s", _TOKEN_SAVED_AT_KEY, saved_at_raw, exc)
-        return None
-
-    if datetime.now() - saved_at < timedelta(hours=_TOKEN_EXPIRY_HOURS):
-        logger.info("Using cached Fyers token (saved %s)", saved_at.strftime("%H:%M"))
-        return token
-
-    logger.info("Cached Fyers token expired — re-authenticating")
-    return None
+    logger.info("Using cached Fyers token")
+    return token
 
 
 def _save_token(access_token: str) -> None:
