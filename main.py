@@ -26,9 +26,9 @@ logger = get_logger("main", settings.ops.log_level, settings.ops.log_file)
 # ---------------------------------------------------------------------------
 
 def cmd_auth() -> None:
-    """Interactive Fyers OAuth authentication — stores token for the trading session."""
+    """Interactive Fyers OAuth authentication — always fetches a fresh token."""
     from utils.auth_helper import get_fyers_client
-    get_fyers_client()
+    get_fyers_client(force_new_token=True)
     logger.info("Authentication successful. Access token cached.")
 
 

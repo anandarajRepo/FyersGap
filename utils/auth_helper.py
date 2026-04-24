@@ -176,13 +176,18 @@ def _do_auth_flow(app_id: str, secret_key: str, redirect_uri: str) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
-def get_fyers_client():
+def get_fyers_client(force_new_token: bool = False):
     """
     Return an authenticated Fyers API v3 client (FyersModel instance).
 
     Loads a cached token from the .env file if valid; otherwise runs the
     interactive OAuth flow and writes the new token back to .env for
     subsequent runs.
+
+    Parameters
+    ----------
+    force_new_token : bool
+        When True, skip the cached token and always run a fresh OAuth flow.
 
     Returns
     -------
@@ -206,7 +211,7 @@ def get_fyers_client():
             "FYERS_SECRET_KEY is not set. Copy .env.example → .env and fill in your credentials."
         )
 
-    access_token = _load_cached_token()
+    access_token = None if force_new_token else _load_cached_token()
     if not access_token:
         access_token = _do_auth_flow(cfg.app_id, cfg.secret_key, cfg.redirect_uri)
         _save_token(access_token)
